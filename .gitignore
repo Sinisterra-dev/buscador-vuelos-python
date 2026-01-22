@@ -1,0 +1,13 @@
+﻿# Entorno virtual
+venv/
+
+# Variables de entorno
+.env
+
+# Cache y basura de Python
+__pycache__/
+*.pyc
+
+# Datos generados
+data/
+*.csv
