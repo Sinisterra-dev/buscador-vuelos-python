@@ -13,6 +13,14 @@ AMADEUS_API_SECRET = os.getenv("AMADEUS_API_SECRET")
 AMADEUS_URL_TOKEN = "https://test.api.amadeus.com/v1/security/oauth2/token"
 AMADEUS_URL_FLIGHTS = "https://test.api.amadeus.com/v2/shopping/flight-offers"
 
+# Aerolíneas activas en rutas domésticas colombianas
+AEROLINEAS_DEMO = [
+    ("Avianca", "https://www.avianca.com"),
+    ("LATAM", "https://www.latam.com"),
+    ("Wingo", "https://www.wingo.com"),
+    ("JetSmart", "https://www.jetsmart.com"),
+]
+
 
 def get_access_token():
     if not AMADEUS_API_KEY or not AMADEUS_API_SECRET:
@@ -23,11 +31,15 @@ def get_access_token():
         "client_id": AMADEUS_API_KEY,
         "client_secret": AMADEUS_API_SECRET,
     }
-    resp = requests.post(AMADEUS_URL_TOKEN, data=data)
-    if resp.status_code != 200:
-        logging.error("Error obteniendo token Amadeus")
+    try:
+        resp = requests.post(AMADEUS_URL_TOKEN, data=data, timeout=10)
+        if resp.status_code != 200:
+            logging.error("Error obteniendo token Amadeus")
+            return None
+        return resp.json().get("access_token")
+    except Exception as e:
+        logging.error(f"Error de conexión al obtener token: {e}")
         return None
-    return resp.json().get("access_token")
 
 
 def buscar_vuelos(origen, destino, fecha_salida, fecha_vuelta=None):
@@ -74,14 +86,25 @@ def buscar_vuelos(origen, destino, fecha_salida, fecha_vuelta=None):
 
 
 def mock_vuelos(origen, destino, salida, vuelta):
-    """Modo demo: datos simulados pero con precio aleatorio para variedad."""
+    """Modo demo: datos simulados con precios realistas en COP."""
     import random
-    precios = [round(random.uniform(120, 400), 2) for _ in range(3)]
+    # Precios típicos de vuelos domésticos en Colombia (en COP)
+    precios = [round(random.uniform(180_000, 650_000), -3) for _ in range(len(AEROLINEAS_DEMO))]
     return [
-        {"aerolinea": "Avianca", "precio": precios[0], "salida": salida, "vuelta": vuelta or salida, "enlace": "https://www.avianca.com"},
-        {"aerolinea": "LATAM", "precio": precios[1], "salida": salida, "vuelta": vuelta or salida, "enlace": "https://www.latam.com"},
-        {"aerolinea": "Viva Air", "precio": precios[2], "salida": salida, "vuelta": vuelta or salida, "enlace": "https://www.vivaair.com"},
+        {
+            "aerolinea": nombre,
+            "precio": precio,
+            "salida": salida,
+            "vuelta": vuelta or salida,
+            "enlace": url,
+        }
+        for (nombre, url), precio in zip(AEROLINEAS_DEMO, precios)
     ]
+
+
+def es_modo_demo():
+    """Retorna True si la aplicación está funcionando en modo demo (sin API key)."""
+    return not (AMADEUS_API_KEY and AMADEUS_API_SECRET)
 
 
 def generar_fechas_mes(mes_str):
