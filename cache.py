@@ -2,11 +2,14 @@ import sqlite3
 import json
 import os
 
+# Ruta del archivo SQLite usado como caché local.
 DB_PATH = "data/cache.db"
+# Garantizamos que la carpeta exista antes de abrir la base de datos.
 os.makedirs("data", exist_ok=True)
 
 
 def _create_table():
+    """Crea la tabla de caché si todavía no existe."""
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS cache (
@@ -25,6 +28,7 @@ _create_table()
 
 
 def guardar_cache(origen, destino, salida, vuelta, data):
+    """Guarda o reemplaza una búsqueda de vuelos en caché."""
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             "INSERT OR REPLACE INTO cache VALUES (?,?,?,?,?)",
@@ -34,6 +38,7 @@ def guardar_cache(origen, destino, salida, vuelta, data):
 
 
 def cargar_cache(origen, destino, salida, vuelta):
+    """Recupera una búsqueda desde caché; retorna None si no existe."""
     with sqlite3.connect(DB_PATH) as conn:
         row = conn.execute(
             "SELECT data FROM cache WHERE origen=? AND destino=? AND salida=? AND vuelta=?",
