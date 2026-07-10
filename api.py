@@ -5,11 +5,14 @@ import calendar
 from datetime import date
 from dotenv import load_dotenv
 
+# Cargamos variables del archivo .env al iniciar el módulo.
 load_dotenv()
 
+# Credenciales de Amadeus (si no existen, la app entra en modo demo).
 AMADEUS_API_KEY = os.getenv("AMADEUS_API_KEY")
 AMADEUS_API_SECRET = os.getenv("AMADEUS_API_SECRET")
 
+# Endpoints del entorno de pruebas de Amadeus.
 AMADEUS_URL_TOKEN = "https://test.api.amadeus.com/v1/security/oauth2/token"
 AMADEUS_URL_FLIGHTS = "https://test.api.amadeus.com/v2/shopping/flight-offers"
 
@@ -23,6 +26,7 @@ AEROLINEAS_DEMO = [
 
 
 def get_access_token():
+    """Solicita un token OAuth2 para consultar la API real."""
     if not AMADEUS_API_KEY or not AMADEUS_API_SECRET:
         logging.warning("No hay API key configurada. Usando modo demo.")
         return None
@@ -43,11 +47,16 @@ def get_access_token():
 
 
 def buscar_vuelos(origen, destino, fecha_salida, fecha_vuelta=None):
-    """Busca vuelos reales o mock si no hay API key."""
+    """
+    Busca vuelos y devuelve resultados normalizados.
+
+    Si no hay credenciales o falla la API, devuelve datos simulados.
+    """
     token = get_access_token()
     if token is None:
         return mock_vuelos(origen, destino, fecha_salida, fecha_vuelta)
 
+    # Parámetros principales de búsqueda.
     params = {
         "originLocationCode": origen,
         "destinationLocationCode": destino,
@@ -64,16 +73,21 @@ def buscar_vuelos(origen, destino, fecha_salida, fecha_vuelta=None):
         resp = requests.get(AMADEUS_URL_FLIGHTS, params=params, headers=headers, timeout=15)
         resp.raise_for_status()
     except Exception as e:
+        # Si falla la API, mantenemos la app usable con datos demo.
         logging.warning(f"Error al consultar API ({e}), usando mock.")
         return mock_vuelos(origen, destino, fecha_salida, fecha_vuelta)
 
     data = resp.json()
     vuelos = []
     for item in data.get("data", []):
+        # Amadeus entrega precio como texto; lo convertimos a número.
         precio = float(item["price"]["total"])
         itinerarios = item["itineraries"]
+        # Primer segmento del primer itinerario = salida.
         salida = itinerarios[0]["segments"][0]["departure"]["at"].split("T")[0]
+        # Último segmento del último itinerario = llegada de regreso.
         vuelta = itinerarios[-1]["segments"][-1]["arrival"]["at"].split("T")[0] if len(itinerarios) > 1 else None
+        # Código de aerolínea validadora.
         aerolinea = item["validatingAirlineCodes"][0]
         vuelos.append({
             "aerolinea": aerolinea,
@@ -86,7 +100,7 @@ def buscar_vuelos(origen, destino, fecha_salida, fecha_vuelta=None):
 
 
 def mock_vuelos(origen, destino, salida, vuelta):
-    """Modo demo: datos simulados con precios realistas en COP."""
+    """Modo demo: genera resultados simulados con rangos realistas en COP."""
     import random
     # Precios típicos de vuelos domésticos en Colombia (en COP)
     precios = [round(random.uniform(180_000, 650_000), -3) for _ in range(len(AEROLINEAS_DEMO))]

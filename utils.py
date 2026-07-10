@@ -2,9 +2,12 @@ from datetime import datetime, timedelta
 
 
 def sumar_dias(fecha_str, dias):
-    """Recibe 'YYYY-MM-DD' y devuelve fecha + n días."""
+    """Recibe 'YYYY-MM-DD' y devuelve la fecha desplazada n días."""
+    # Convertimos texto a fecha.
     base = datetime.strptime(fecha_str, "%Y-%m-%d")
+    # Sumamos la cantidad de días solicitada.
     nueva = base + timedelta(days=dias)
+    # Volvemos a texto para mantener formato consistente en toda la app.
     return nueva.strftime("%Y-%m-%d")
 
 

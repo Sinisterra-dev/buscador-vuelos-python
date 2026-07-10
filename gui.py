@@ -1,3 +1,5 @@
+"""Interfaz gráfica principal del buscador de vuelos."""
+
 import logging
 from datetime import datetime
 import PySimpleGUI as sg
@@ -51,6 +53,7 @@ def _validar_inputs(origen, destino, mes):
 
 
 def start_gui():
+    """Construye la ventana y gestiona todos los eventos de la aplicación."""
     sg.theme(THEME)
     sg.set_options(font=FONT_NORMAL)
 
@@ -96,6 +99,7 @@ def start_gui():
         size=(900, 600),
     )
 
+    # Aquí guardamos los resultados actuales para mostrar, exportar y abrir enlaces.
     vuelos_data = []
 
     while True:
@@ -106,6 +110,7 @@ def start_gui():
 
         # ── Buscar vuelos ────────────────────────────────────────────────────
         if event == "-BUSCAR-":
+            # Leemos y normalizamos entradas del formulario.
             origen = values["-ORIGEN-"].strip().upper()
             destino = values["-DESTINO-"].strip().upper()
             mes = values["-MES-"].strip()
@@ -123,6 +128,7 @@ def start_gui():
             vuelos_data = []
             fechas = generar_fechas_mes(mes)
 
+            # Recorremos todo el mes para comparar precios y quedarnos con opciones baratas.
             for salida in fechas:
                 if modo_vuelta:
                     for dias_retorno in range(11, 16):
@@ -147,6 +153,7 @@ def start_gui():
 
             vuelos_data = sorted(vuelos_data, key=lambda x: x["precio"])
 
+            # Adaptamos los datos a la estructura esperada por la tabla visual.
             tabla_rows = [
                 [
                     v["aerolinea"],
@@ -175,6 +182,7 @@ def start_gui():
 
         # ── Exportar CSV ─────────────────────────────────────────────────────
         if event == "-EXPORTAR-" and vuelos_data:
+            # Exportamos el resultado exacto que ve el usuario.
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             nombre_archivo = f"vuelos_{timestamp}.csv"
             df = pd.DataFrame(vuelos_data)
@@ -201,4 +209,3 @@ def start_gui():
                     webbrowser.open(enlace)
 
     window.close()
-
